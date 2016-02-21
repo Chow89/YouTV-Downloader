@@ -1,0 +1,9 @@
+# List all series name you want to download. Please only write one name per line.
+# Use # for comments or to disable downloads.
+
+American Dad
+#Die Simpsons
+Family Guy
+In The Box
+2 Broke Girls
+Akte X
