@@ -1,54 +1,44 @@
 import datetime
-import inspect
 import os
-import platform
+import json
 
 from bs4 import BeautifulSoup
 import dateutil.parser
 import requests
 
-
-LOGIN_EMAIL = ""
-LOGIN_PASSWORD = "
-PREMIUM = False
-SAVEPATH = "" if platform.system() == "Windows" else ""
 CHUNKSIZE = 8 * 1024 * 1024  # 8 MB
-BASEPATH = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 
 
 def run():
-    init()
-    s = requests.Session()
-    login(s)
-    getallrecords(s)
+    config = readConfig()
+    username = config.get('username')
+    password = config.get('password')
+    premium = config.get('premium')
+    path = config.get('storage_path')
+    s = init(path)
+    login(s, username, password)
+
+    # record all broadcasts next 24 hours
+    for broadcast in config.get('broadcasts'):
+        record(s, broadcast.get('title'), broadcast.get('filter'))
+
+    # download recorded broadcasts
+    download(s, path)
 
 
-def init():
-    if not os.path.isdir(SAVEPATH):
-        os.makedirs(SAVEPATH)
+def init(path):
+    if not os.path.isdir(path):
+        os.makedirs(path)
+
+    return requests.Session()
 
 
-def login(s):
-    s.post("https://youtv.de/login", {"session[email]": LOGIN_EMAIL, "session[password]": LOGIN_PASSWORD})
+def login(s, user, password):
+    s.post("https://youtv.de/login", {"session[email]": user, "session[password]": password})
 
 
-def getallrecords(s):
-    f = open(BASEPATH + "/serien.txt")
-    for line in f:
-        if not line.startswith("#"):
-            line = line.replace("\n", "").replace("\r", "")
-            json = s.get("https://youtv.de/api/v2/broadcasts/search?q=" + line).json()
-            for rec in json['broadcasts']:
-                start = dateutil.parser.parse(rec['starts_at']).timestamp()
-                now = datetime.datetime.now().timestamp()
-                if start < now:
-                    if PREMIUM:  # all records in last 7 days
-                        log("Start downloading " + cleanstring(str(rec)))
-                        download(s, (getremotefileurl(s, rec['url']), makefilename(rec)))
-                    else:
-                        if start > now - 24 * 60 * 60:  # all records within last 24 hours
-                            log("Start downloading " + cleanstring(str(rec)))
-                            download(s, (getremotefileurl(s, rec['url']), makefilename(rec)))
+def readConfig():
+    return json.load(open('config.json'))
 
 
 def cleanstring(s):
@@ -73,35 +63,39 @@ def makedoubledigit(n):
 
 
 def getremotefileurl(s, url):
-    soup = BeautifulSoup(s.get(url + "/streamen").text, 'html.parser')
+    soup = BeautifulSoup(s.get(url).text, 'html.parser')
     sources = soup.find_all('source')
     # FIXME: sort the list by resolution and take the first element
     if len(sources) == 4:
         return sources[2]['src']
     elif len(sources) == 2:
-        return sources[1]['src']
-    else:
-        log("No source data found.\n")
-        return ""
+        return sources[0]['src']
 
 
-def download(s, url):
-    if not url[0] == "":
-        if not os.path.isfile(SAVEPATH + url[1]):
-            log("File from " + url[0] + " will be saved at " + SAVEPATH + url[1] + "\n")
-            video = s.get(url[0], stream=True)
-            with open(SAVEPATH + url[1], "wb") as file:
+def download(s, path):
+    recordings = s.get('https://www.youtv.de/api/v2/recs.json').json().get('recordings')
+    for rec in recordings:
+        if rec.get('status') == 'recorded':
+            url = getremotefileurl(s, "https://www.youtv.de/tv-sendungen/" + str(rec.get('id')) + "/streamen")
+            video = s.get(url, stream=True)
+            with open(path + makefilename(rec), "wb") as file:
                 for chunk in video.iter_content(chunk_size=CHUNKSIZE):
                     if chunk:
                         file.write(chunk)
-        else:
-            log("File " + url[1] + " already exists.\n")
+            delete(s, rec.get('id'))
 
 
-def log(message):
-    f = open(BASEPATH + "/log.log", "a")
-    f.write(message + "\n")
-    f.close()
+def delete(s, rid):
+    s.delete('https://www.youtv.de/api/v2/recordings/' + str(rid) + '.json')
+
+
+def record(s, title, filters):
+    response = s.get('https://www.youtv.de/api/v2/search/broadcasts.json?title=' + title).json()
+    for broadcast in response.get('search').get('broadcasts'):
+        if dateutil.parser.parse(broadcast.get('starts_at')).replace(tzinfo=None) <= datetime.datetime.now() + datetime.timedelta(days=1):
+            if broadcast['production_year'] >= filters['min_productionyear']:
+                data = {"recording": {"broadcast_id": broadcast.get("id")}}
+                s.post('https://www.youtv.de/api/v2/recordings.json', json=data)
 
 
 run()

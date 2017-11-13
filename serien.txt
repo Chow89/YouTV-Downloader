@@ -1,7 +1,0 @@
-# List all series name you want to download. Please only write one name per line.
-# Use # for comments or to disable downloads.
-
-Titel: "American Dad"
-#Die Simpsons
-NICHT ComedyCentral Titel: "Family Guy"
-Titel: "Frontal 21"
