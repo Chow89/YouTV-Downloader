@@ -1,0 +1,29 @@
+{
+  "username": "",
+  "password": "",
+  "premium": false,
+  "storage_path": "",
+  "broadcasts": [
+    {
+      "title": "die simpsons",
+      "filter": {
+        "min_productionyear": 2015
+      }
+    },{
+      "title": "big bang theory",
+      "filter": {
+        "min_productionyear": 2016
+      }
+    },{
+      "title": "fargo",
+      "filter": {
+        "min_productionyear": 0
+      }
+    },{
+      "title": "orange is the new black",
+      "filter": {
+        "min_productionyear": 0
+      }
+    }
+  ]
+}
