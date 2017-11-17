@@ -1,7 +1,7 @@
 import datetime
 import os
 import json
-
+import sys
 from bs4 import BeautifulSoup
 import dateutil.parser
 import requests
@@ -9,8 +9,8 @@ import requests
 CHUNKSIZE = 8 * 1024 * 1024  # 8 MB
 
 
-def run():
-    config = readConfig()
+def run(args):
+    config = readConfig(args[0])
     username = config.get('username')
     password = config.get('password')
     premium = config.get('premium')
@@ -37,8 +37,8 @@ def login(s, user, password):
     s.post("https://youtv.de/login", {"session[email]": user, "session[password]": password})
 
 
-def readConfig():
-    return json.load(open('config.json'))
+def readConfig(path):
+    return json.load(open(path))
 
 
 def cleanstring(s):
@@ -49,7 +49,7 @@ def cleanstring(s):
 def makefilename(rec):
     if rec['series_number'] is None or rec['series_season'] is None:
         return rec['starts_at'][0:19].replace("T", "_").replace(":", "-") + "_" + cleanstring(rec['title']) + "_" + \
-               rec['channel_name'].lower().replace(" ", "-") + ".mp4"
+               cleanstring(rec['subtitle']) + ".mp4"
     else:
         return "S" + makedoubledigit(rec['series_season']) + "E" + makedoubledigit(
             rec['series_number']) + "_" + cleanstring(rec['title']) + ".mp4"
@@ -65,11 +65,7 @@ def makedoubledigit(n):
 def getremotefileurl(s, url):
     soup = BeautifulSoup(s.get(url).text, 'html.parser')
     sources = soup.find_all('source')
-    # FIXME: sort the list by resolution and take the first element
-    if len(sources) == 4:
-        return sources[2]['src']
-    elif len(sources) == 2:
-        return sources[0]['src']
+    return sources[0]['src']
 
 
 def download(s, path):
@@ -98,4 +94,4 @@ def record(s, title, filters):
                 s.post('https://www.youtv.de/api/v2/recordings.json', json=data)
 
 
-run()
+run(sys.argv[1:])
