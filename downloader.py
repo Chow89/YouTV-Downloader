@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+#  -*- coding: utf-8 -*-
+
+# Usage: python3 downloader.py --config=/path/to/config.json
+
 import datetime
 import os
 import json
@@ -10,7 +15,8 @@ CHUNKSIZE = 8 * 1024 * 1024  # 8 MB
 
 
 def run(args):
-    config = readConfig(args[0])
+    configpath = getConfigPath(args)
+    config = readConfig(configpath)
     username = config.get('username')
     password = config.get('password')
     premium = config.get('premium')
@@ -24,6 +30,12 @@ def run(args):
 
     # download recorded broadcasts
     download(s, path)
+
+
+def getConfigPath(args):
+    for arg in args:
+        if arg.startswith('--config'):
+            return arg.split('=')[1]
 
 
 def init(path):
@@ -47,12 +59,14 @@ def cleanstring(s):
 
 
 def makefilename(rec):
-    if rec['series_number'] is None or rec['series_season'] is None:
+    if rec['series_number'] is not None and rec['series_season'] is not None:
+        return "S" + makedoubledigit(rec['series_season']) + "E" + makedoubledigit(
+            rec['series_number']) + "_" + cleanstring(rec['title']) + ".mp4"
+    elif rec['subtitle'] is not None:
         return rec['starts_at'][0:19].replace("T", "_").replace(":", "-") + "_" + cleanstring(rec['title']) + "_" + \
                cleanstring(rec['subtitle']) + ".mp4"
     else:
-        return "S" + makedoubledigit(rec['series_season']) + "E" + makedoubledigit(
-            rec['series_number']) + "_" + cleanstring(rec['title']) + ".mp4"
+        rec['starts_at'][0:19].replace("T", "_").replace(":", "-") + "_" + cleanstring(rec['title']) + ".mp4"
 
 
 def makedoubledigit(n):
