@@ -36,6 +36,7 @@ def getConfigPath(args):
     for arg in args:
         if arg.startswith('--config'):
             return arg.split('=')[1]
+    raise RuntimeError('Missing config parameter')
 
 
 def init(path):
