@@ -48,8 +48,7 @@ def cleanstring(s):
 
 def makefilename(rec):
     if rec['series_number'] is None or rec['series_season'] is None:
-        return rec['starts_at'][0:19].replace("T", "_").replace(":", "-") + "_" + cleanstring(rec['title']) + "_" + \
-               rec['channel_name'].lower().replace(" ", "-") + ".mp4"
+        return rec['starts_at'][0:19].replace("T", "_").replace(":", "-") + "_" + cleanstring(rec['title']) + ".mp4"
     else:
         return "S" + makedoubledigit(rec['series_season']) + "E" + makedoubledigit(
             rec['series_number']) + "_" + cleanstring(rec['title']) + ".mp4"
