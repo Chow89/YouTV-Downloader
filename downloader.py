@@ -67,7 +67,7 @@ def makefilename(rec):
         return rec['starts_at'][0:19].replace("T", "_").replace(":", "-") + "_" + cleanstring(rec['title']) + "_" + \
                cleanstring(rec['subtitle']) + ".mp4"
     else:
-        rec['starts_at'][0:19].replace("T", "_").replace(":", "-") + "_" + cleanstring(rec['title']) + ".mp4"
+        return rec['starts_at'][0:19].replace("T", "_").replace(":", "-") + "_" + cleanstring(rec['title']) + ".mp4"
 
 
 def makedoubledigit(n):
