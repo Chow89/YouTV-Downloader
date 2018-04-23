@@ -10,6 +10,7 @@ import sys
 from bs4 import BeautifulSoup
 import dateutil.parser
 import requests
+from comparatorfactory import ComparatorFactory
 
 CHUNKSIZE = 8 * 1024 * 1024  # 8 MB
 
@@ -104,7 +105,7 @@ def record(s, title, filters):
     response = s.get('https://www.youtv.de/api/v2/search/broadcasts.json?title=' + title).json()
     for broadcast in response.get('search').get('broadcasts'):
         if dateutil.parser.parse(broadcast.get('starts_at')).replace(tzinfo=None) <= datetime.datetime.now() + datetime.timedelta(days=1):
-            if broadcast['production_year'] >= filters['min_productionyear']:
+            if ComparatorFactory.factor('production_year').compare(filters['min_productionyear'], broadcast['production_year']):
                 data = {"recording": {"broadcast_id": broadcast.get("id")}}
                 s.post('https://www.youtv.de/api/v2/recordings.json', json=data)
 
