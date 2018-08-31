@@ -86,15 +86,16 @@ def getremotefileurl(s, url):
 
 def download(s, path):
     recordings = s.get('https://www.youtv.de/api/v2/recs.json').json().get('recordings')
-    for rec in recordings:
-        if rec.get('status') == 'recorded':
-            url = getremotefileurl(s, "https://www.youtv.de/tv-sendungen/" + str(rec.get('id')) + "/streamen")
-            video = s.get(url, stream=True)
-            with open(path + makefilename(rec), "wb") as file:
-                for chunk in video.iter_content(chunk_size=CHUNKSIZE):
-                    if chunk:
-                        file.write(chunk)
-            delete(s, rec.get('id'))
+    if recordings:
+        for rec in recordings:
+            if rec.get('status') == 'recorded':
+                url = getremotefileurl(s, "https://www.youtv.de/tv-sendungen/" + str(rec.get('id')) + "/streamen")
+                video = s.get(url, stream=True)
+                with open(path + makefilename(rec), "wb") as file:
+                    for chunk in video.iter_content(chunk_size=CHUNKSIZE):
+                        if chunk:
+                            file.write(chunk)
+                delete(s, rec.get('id'))
 
 
 def delete(s, rid):
